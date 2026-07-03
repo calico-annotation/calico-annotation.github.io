@@ -4,262 +4,216 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CALICO: Codebook-Aligned LLM-assisted Iterative Coding and Optimization</title>
-  <meta name="description" content="CALICO is an interactive system for codebook-aligned LLM annotation. You set the labels. CALICO writes the prompts and labels the rest." />
+  <meta name="description" content="CALICO is an interactive system for codebook-aligned LLM annotation: upload a codebook and dataset, generate a multi-step annotation pipeline, calibrate with human feedback, and export final labels." />
   <link rel="icon" type="image/png" href="assets/calico.png" />
   <meta property="og:title" content="CALICO: Codebook-Aligned LLM-assisted Iterative Coding and Optimization" />
-  <meta property="og:description" content="You set the labels. CALICO writes the prompts and labels the rest." />
+  <meta property="og:description" content="An interactive system for codebook-aligned LLM annotation with human-in-the-loop calibration and prompt optimization." />
   <meta property="og:image" content="https://calico-annotation.github.io/assets/workflow.png" />
   <meta property="og:url" content="https://calico-annotation.github.io/" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
-    rel="stylesheet"
-  />
   <style>
-    /* Static port of the app landing (frontend/src/pages/ProjectList.tsx inside
-       AppLayout.tsx). Tokens mirror frontend/tailwind.config.js. */
     :root {
-      --cream: #f7f5f2;
-      --paper: #EEEDE6;
-      --seam:  #E4E4E0;
-      --ink:   #0b0b0a;
-      --stone-300: #d6d3d1;
-      --stone-400: #a8a29e;
-      --stone-500: #78716c;
-      --stone-600: #57534e;
-      --stone-800: #292524;
+      color-scheme: light dark;
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --text: #1c1917;
+      --muted: #57534e;
+      --border: #e7e5e4;
+      --accent: #c2620e;
+      --accent-soft: #fdf1e3;
+      --code-bg: #f5f5f4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #14120f;
+        --surface: #1e1b17;
+        --text: #f5f2ee;
+        --muted: #a8a29e;
+        --border: #33302b;
+        --accent: #e8933a;
+        --accent-soft: #2c2118;
+        --code-bg: #262320;
+      }
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { font-feature-settings: 'ss01', 'cv11'; }
     body {
-      background: var(--cream);
-      color: var(--ink);
-      font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
-      line-height: 1.5;
     }
-    ::selection { background-color: #0b0b0a; color: #f7f5f2; }
-    a { color: inherit; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
 
-    .mono-editorial {
-      font-family: 'Geist Mono', ui-monospace, monospace;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-    .wrap { max-width: 80rem; margin: 0 auto; padding: 0 1.5rem; }
-
-    /* Nav (AppLayout header) */
-    header.site {
-      border-bottom: 1px solid var(--seam);
-      background: rgba(247, 245, 242, 0.8);
-      backdrop-filter: blur(4px);
-      position: sticky; top: 0; z-index: 30;
-    }
-    .nav { height: 4rem; display: flex; align-items: center; justify-content: space-between; }
-    .brand { display: flex; align-items: baseline; gap: 0.75rem; text-decoration: none; }
-    .brand .name { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.025em; }
-    .brand .tag { color: var(--stone-400); }
-    .nav-links { display: flex; align-items: center; gap: 0.25rem; }
-    .nav-links a, .nav-links span.soon {
-      padding: 0.5rem 0.75rem; font-size: 0.875rem; font-weight: 500;
-      color: var(--stone-500); text-decoration: none; transition: color 0.15s;
-    }
-    .nav-links a:hover { color: var(--ink); }
-    .nav-links span.soon { color: var(--stone-400); cursor: default; }
-    .nav-links .sep { color: var(--stone-300); margin: 0 0.25rem; user-select: none; }
-
-    main .wrap { padding-top: 3rem; padding-bottom: 3rem; }
-    main section + section { margin-top: 4rem; }
-
-    /* Hero (ProjectList hero, split 5/7) */
-    .hero { padding: 1.5rem 0 0.5rem; display: grid; gap: 2.5rem; align-items: center; }
-    @media (min-width: 1024px) { .hero { grid-template-columns: 5fr 7fr; } }
-    .hero .eyebrow { color: var(--stone-500); margin-bottom: 1.5rem; }
+    header { padding: 72px 0 48px; text-align: center; }
+    .mark { width: 84px; height: 84px; margin: 0 auto 20px; display: block; }
     h1 {
-      font-size: 3rem; font-weight: 500;
-      letter-spacing: -0.025em; line-height: 0.95;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      max-width: 22ch;
+      margin: 0 auto;
     }
-    h1 em {
-      font-family: 'Fraunces', Georgia, serif;
-      font-style: italic; font-weight: 400;
-      line-height: 1.1;
-    }
-    .hero .sub {
-      margin-top: 1.75rem; font-size: 1.25rem; line-height: 1.625;
-      color: var(--stone-600); max-width: 28rem;
-    }
-    .hero .ctas { margin-top: 2.25rem; display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; }
-    .btn-primary {
-      display: inline-block; padding: 0.75rem 1.5rem;
-      background: var(--ink); color: var(--cream);
-      font-size: 0.875rem; font-weight: 500; text-decoration: none;
-      transition: background-color 0.15s;
-    }
-    .btn-primary:hover { background: var(--stone-800); }
-    .btn-secondary {
-      display: inline-block; padding: 0.75rem 1.5rem;
-      border: 1px solid rgba(11, 11, 10, 0.3); color: var(--ink);
-      font-size: 0.875rem; font-weight: 500; text-decoration: none;
-      transition: border-color 0.15s;
-    }
-    .btn-secondary:hover { border-color: var(--ink); }
-    .btn-secondary.soon { opacity: 0.5; pointer-events: none; }
-    .hero img { width: 100%; height: auto; display: block; }
+    h1 .name { color: var(--accent); }
+    .authors { margin-top: 20px; font-size: 1.05rem; }
+    .authors a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--border); }
+    .authors a:hover { border-bottom-color: var(--accent); }
+    .affil { margin-top: 4px; color: var(--muted); font-size: 0.95rem; }
 
-    /* Sections (four steps, abstract, bibtex) */
-    section.band { border-top: 1px solid var(--seam); padding-top: 3rem; }
-    h2 { font-size: 1.875rem; font-weight: 500; letter-spacing: -0.025em; }
+    .links { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 20px; border-radius: 999px;
+      font-size: 0.92rem; font-weight: 600; text-decoration: none;
+      border: 1px solid var(--border);
+      color: var(--text); background: var(--surface);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+    .btn.primary:hover { filter: brightness(1.06); }
+    .btn.soon { opacity: 0.55; cursor: default; pointer-events: none; }
+    .btn svg { width: 15px; height: 15px; flex: none; }
 
-    .steps { margin-top: 2.5rem; display: grid; gap: 2.25rem 3rem; list-style: none; }
-    @media (min-width: 640px) { .steps { grid-template-columns: 1fr 1fr; } }
-    .step { display: grid; grid-template-columns: 2fr 10fr; gap: 1rem; }
-    .step .n { color: var(--stone-400); padding-top: 0.25rem; }
-    .step h3 { font-size: 1.25rem; font-weight: 500; letter-spacing: -0.025em; margin-bottom: 0.375rem; }
-    .step p { font-size: 0.875rem; color: var(--stone-600); line-height: 1.625; }
-
-    .byline { margin-top: 2rem; }
-    .byline .who { font-size: 1.125rem; font-weight: 500; }
-    .byline .who a { text-decoration: none; border-bottom: 1px solid var(--seam); }
-    .byline .who a:hover { border-bottom-color: var(--ink); }
-    .byline .where { margin-top: 0.25rem; color: var(--stone-500); }
-    .prose { margin-top: 1.5rem; max-width: 65ch; color: var(--stone-600); line-height: 1.7; }
-    .prose strong { color: var(--ink); font-weight: 500; }
-
-    pre.card {
-      margin-top: 2rem; background: #ffffff; border: 1px solid var(--seam);
-      padding: 1.5rem; overflow-x: auto;
-      font-family: 'Geist Mono', ui-monospace, monospace;
-      font-size: 0.8125rem; line-height: 1.6;
+    .figure { margin: 24px 0 0; }
+    .figure .frame {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .figure img { width: 100%; height: auto; display: block; }
+    .figure figcaption {
+      margin-top: 12px; text-align: center;
+      color: var(--muted); font-size: 0.9rem; max-width: 60ch;
+      margin-left: auto; margin-right: auto;
     }
 
-    footer.site { border-top: 1px solid var(--seam); }
-    footer.site .wrap {
-      padding: 2rem 1.5rem 3rem;
-      display: flex; align-items: baseline; justify-content: space-between;
-      flex-wrap: wrap; gap: 0.75rem;
-    }
-    footer.site .links a { color: var(--stone-500); text-decoration: none; margin-left: 1.25rem; }
-    footer.site .links a:hover { color: var(--ink); }
+    section { padding: 48px 0; border-top: 1px solid var(--border); }
+    section:first-of-type { border-top: none; padding-top: 40px; }
+    h2 { font-size: 1.3rem; letter-spacing: -0.01em; margin-bottom: 16px; }
+    .prose { max-width: 65ch; color: var(--muted); }
+    .prose strong { color: var(--text); }
 
-    @media (max-width: 639px) {
-      h1 { font-size: 2.25rem; }
-      .brand .tag { display: none; }
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+    .feature {
+      border: 1px solid var(--border); border-radius: 12px;
+      background: var(--surface); padding: 18px 20px;
+    }
+    .feature h3 { font-size: 1rem; margin-bottom: 4px; }
+    .feature h3 span { color: var(--accent); margin-right: 6px; }
+    .feature p { color: var(--muted); font-size: 0.92rem; }
+
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px 20px;
+      overflow-x: auto; font-size: 0.85rem; line-height: 1.55;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      color: var(--text);
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0 48px; text-align: center;
+      color: var(--muted); font-size: 0.9rem;
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--accent); }
+
+    @media (max-width: 640px) {
+      header { padding: 48px 0 36px; }
+      .features { grid-template-columns: 1fr; }
+      section { padding: 36px 0; }
     }
   </style>
 </head>
 <body>
 
-  <header class="site">
-    <div class="wrap nav">
-      <a class="brand" href="/">
-        <span class="name">CALICO</span>
-        <span class="tag mono-editorial">codebook-aligned annotation</span>
+  <header class="wrap">
+    <img class="mark" src="assets/calico.png" alt="CALICO logo, a calico cat" />
+    <h1><span class="name">CALICO</span>: Codebook-Aligned LLM-assisted Iterative Coding and Optimization</h1>
+    <p class="authors"><a href="https://github.com/boqiny">Boqin Yuan</a></p>
+    <p class="affil">University of California, San Diego</p>
+    <div class="links">
+      <a class="btn primary soon" href="#" aria-disabled="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        Paper (coming soon)
       </a>
-      <nav class="nav-links">
-        <a href="http://8.228.248.132:8080" target="_blank" rel="noopener">Demo</a>
-        <a href="https://github.com/calico-annotation/calico-annotation">Code</a>
-        <span class="soon" title="Coming soon">Paper</span>
-        <span class="sep">/</span>
-        <a href="#bibtex">BibTeX</a>
-      </nav>
+      <a class="btn" href="https://github.com/calico-annotation/calico-annotation">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.15c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.53-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.7 5.38-5.26 5.67.41.35.77 1.05.77 2.12v3.14c0 .3.21.67.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+        Code
+      </a>
+      <a class="btn" href="http://8.228.248.132:8080/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        Live demo
+      </a>
+      <a class="btn" href="#bibtex">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6M9 16h6M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+        BibTeX
+      </a>
     </div>
+
+    <figure class="figure">
+      <div class="frame">
+        <img src="assets/workflow.png" alt="CALICO workflow: set up a project from a codebook and data, generate a pipeline and draft annotation, refine prompts with human feedback, and export final labels." />
+      </div>
+      <figcaption>The CALICO workflow: set up, generate, refine, and export.</figcaption>
+    </figure>
   </header>
 
-  <main>
-    <div class="wrap">
+  <main class="wrap">
+    <section>
+      <h2>Abstract</h2>
+      <p class="prose">
+        Qualitative researchers rely on codebooks to keep annotation consistent, but applying a
+        codebook at scale by hand is slow, and prompting an LLM with it naively drifts from the
+        codebook's definitions. <strong>CALICO</strong> is an interactive system for
+        codebook-aligned LLM annotation. Researchers upload a codebook and a dataset; CALICO
+        parses the codebook into a structured schema, decomposes it into an ordered multi-step
+        annotation pipeline, and runs draft annotation with real-time progress monitoring.
+        Against optional gold labels, it reports per-dimension accuracy and confusion matrices,
+        mines recurring error patterns, and turns human feedback into versioned prompt revisions
+        through iterative calibration and automatic prompt optimization. Final labels export to
+        CSV or JSON for downstream analysis.
+      </p>
+    </section>
 
-      <section class="hero">
-        <div>
-          <div class="eyebrow mono-editorial">Codebook-aligned text annotation</div>
-          <h1>Label text the way<br /><em>you</em> would.</h1>
-          <p class="sub">You set the labels. CALICO writes the prompts and labels the rest.</p>
-          <div class="ctas">
-            <a class="btn-primary" href="http://8.228.248.132:8080" target="_blank" rel="noopener">Try the live demo &rarr;</a>
-            <a class="btn-secondary soon" href="#" aria-disabled="true">Paper coming soon</a>
-          </div>
+    <section>
+      <h2>What the system does</h2>
+      <div class="features">
+        <div class="feature">
+          <h3><span>1</span>Codebook-aligned</h3>
+          <p>Structured parsing keeps every prompt tied to your codebook's dimensions, labels, and definitions.</p>
         </div>
-        <figure>
-          <img src="assets/workflow.png" alt="CALICO workflow: set up, generate, refine, then get results" />
-        </figure>
-      </section>
-
-      <section class="band">
-        <h2>From your labels to a labeled dataset, in four steps</h2>
-        <ol class="steps">
-          <li class="step">
-            <div class="n mono-editorial">01</div>
-            <div>
-              <h3>Define your labels</h3>
-              <p>Bring your codebook, or start from a ready-made example and edit it.</p>
-            </div>
-          </li>
-          <li class="step">
-            <div class="n mono-editorial">02</div>
-            <div>
-              <h3>It writes the prompts</h3>
-              <p>CALICO turns each label into LLM instructions. You write nothing.</p>
-            </div>
-          </li>
-          <li class="step">
-            <div class="n mono-editorial">03</div>
-            <div>
-              <h3>Show a few examples</h3>
-              <p>It studies your labeled examples and tunes itself to match how you label.</p>
-            </div>
-          </li>
-          <li class="step">
-            <div class="n mono-editorial">04</div>
-            <div>
-              <h3>Label everything</h3>
-              <p>Run it on your whole dataset and export the results as CSV or JSON.</p>
-            </div>
-          </li>
-        </ol>
-      </section>
-
-      <section class="band">
-        <h2>Abstract</h2>
-        <div class="byline">
-          <div class="who"><a href="https://github.com/boqiny">Boqin Yuan</a></div>
-          <div class="where mono-editorial">University of California, San Diego</div>
+        <div class="feature">
+          <h3><span>2</span>Human-centered</h3>
+          <p>Inspect draft labels, give feedback, and let calibration turn your corrections into better prompts.</p>
         </div>
-        <p class="prose">
-          Qualitative researchers rely on codebooks to keep annotation consistent, but applying a
-          codebook at scale by hand is slow, and prompting an LLM with it naively drifts from the
-          codebook's definitions. <strong>CALICO</strong> is an interactive system for
-          codebook-aligned LLM annotation. Researchers upload a codebook and a dataset; CALICO
-          parses the codebook into a structured schema, decomposes it into an ordered multi-step
-          annotation pipeline, and runs draft annotation with real-time progress monitoring.
-          Against optional gold labels, it reports per-dimension accuracy and confusion matrices,
-          mines recurring error patterns, and turns human feedback into versioned prompt revisions
-          through iterative calibration and automatic prompt optimization. Final labels export to
-          CSV or JSON for downstream analysis.
-        </p>
-      </section>
+        <div class="feature">
+          <h3><span>3</span>Versioned prompts</h3>
+          <p>Every prompt revision is tracked, so you can compare rounds and roll back with confidence.</p>
+        </div>
+        <div class="feature">
+          <h3><span>4</span>Easy export</h3>
+          <p>Run the final annotation pass and export labels as CSV or JSON.</p>
+        </div>
+      </div>
+    </section>
 
-      <section class="band" id="bibtex">
-        <h2>BibTeX</h2>
-        <pre class="card">@misc{yuan2026calico,
+    <section id="bibtex">
+      <h2>BibTeX</h2>
+      <pre>@misc{yuan2026calico,
   title  = {{CALICO}: Codebook-Aligned {LLM}-assisted Iterative Coding and Optimization},
   author = {Yuan, Boqin},
   year   = {2026},
   url    = {https://calico-annotation.github.io}
 }</pre>
-      </section>
-
-    </div>
+    </section>
   </main>
 
-  <footer class="site">
+  <footer>
     <div class="wrap">
-      <span class="mono-editorial" style="color: var(--stone-500);">CALICO</span>
-      <span class="links">
-        <a href="http://8.228.248.132:8080" target="_blank" rel="noopener">Live demo</a>
-        <a href="https://github.com/calico-annotation/calico-annotation">GitHub</a>
-      </span>
+      <p>CALICO · <a href="https://github.com/calico-annotation/calico-annotation">GitHub</a></p>
     </div>
   </footer>
 
